@@ -15,18 +15,37 @@ class CSegmented: UIControl {
     private var selectView:UIView = UIView()
     var selectedSegmentIndex = 0
     
-    @IBInspectable var oval:Bool = true
+    @IBInspectable var oval:Bool = true {
+        didSet {
+            self.update()
+        }
+    }
+    @IBInspectable var overlay:Bool = false {
+        didSet {
+            self.update()
+        }
+    }
     
     @IBInspectable var titles:String = "" {
         didSet {
-           self.update()
+            self.update()
         }
     }
     
     @IBInspectable var titlesColor:UIColor? {
         didSet {
+            if let buttonF:UIButton = buttons.first {
+                buttonF.setTitleColor(titlesColor, for: .normal)
+            }
+        }
+    }
+    
+    @IBInspectable var unTitlesColor:UIColor? {
+        didSet {
             buttons.forEach { (b) in
-                b.setTitleColor(titlesColor, for: .normal)
+                if buttons.first != b {
+                    b.setTitleColor(unTitlesColor, for: .normal)
+                }
             }
         }
     }
@@ -56,7 +75,7 @@ class CSegmented: UIControl {
     }
     
     override func draw(_ rect: CGRect) {
-        if oval {
+        if oval && !overlay {
             layer.cornerRadius = frame.height / 2
             clipsToBounds = true
         } else {
@@ -65,7 +84,7 @@ class CSegmented: UIControl {
             selectView.layer.cornerRadius = 0
         }
     }
- 
+    
     func update() {
         
         buttons = []
@@ -80,17 +99,29 @@ class CSegmented: UIControl {
             
             let button = UIButton()
             button.setTitle(buttonTitles[i], for: .normal)
-            button.setTitleColor(titlesColor ?? UIColor.black, for: .normal)
-            button.titleLabel?.font = UIFont(name: "Avenir", size: 17)
+            button.titleLabel?.font = UIFont(name: "Avenir", size: 16)
             button.addTarget(self, action: #selector(buttonAction(_:)), for: .touchUpInside)
             self.buttons.append(button)
-       
+        }
+        
+        buttons.forEach { (but) in
+            if but == buttons.first {
+                but.setTitleColor(titlesColor ?? UIColor.black, for: .normal)
+            } else {
+                but.setTitleColor(unTitlesColor ?? UIColor.lightGray, for: .normal)
+            }
         }
         
         let sWidth = frame.width / CGFloat(buttonTitles.count)
-        selectView.frame = CGRect(x: 0, y: 0, width: sWidth, height: frame.height)
-        selectView.layer.cornerRadius = frame.height / 2
-        selectView.backgroundColor = selectColor ?? UIColor.lightGray
+        
+        if overlay {
+            selectView.frame = CGRect(x: 0, y: frame.height - 3, width: sWidth, height: 3)
+        } else {
+            selectView.frame = CGRect(x: 0, y: 0, width: sWidth, height: frame.height)
+            selectView.layer.cornerRadius = frame.height / 2
+        }
+        
+        selectView.backgroundColor = selectColor ?? UIColor.red
         addSubview(selectView)
         
         let buttonStack = UIStackView(arrangedSubviews: buttons)
@@ -108,14 +139,17 @@ class CSegmented: UIControl {
     }
     
     func buttonAction(_ sender:UIButton) {
-       
+        
         for (index,button) in buttons.enumerated() {
             if button == sender {
                 self.selectedSegmentIndex = index
+                button.setTitleColor(titlesColor ?? UIColor.black, for: .normal)
                 UIView.animate(withDuration: 0.3, animations: {
                     let sPos = self.frame.width / CGFloat(self.buttons.count) * CGFloat(index)
                     self.selectView.frame.origin.x = sPos
                 })
+            } else {
+                button.setTitleColor(unTitlesColor ?? UIColor.lightGray, for: .normal)
             }
         }
         
